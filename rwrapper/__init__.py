@@ -145,11 +145,12 @@ class rwrapper(object):
 
     # id being none means we should insert
     if self.id == None:
+      doc = self.__dict__
       if 'id' in doc:
         del doc['id']
       self.changed(False)
       return self.evaluate_insert(r.table(self._db_table).insert(
-              self.__dict__,
+              doc,
               upsert=self._upsert
             ).run(self._connection))
 
