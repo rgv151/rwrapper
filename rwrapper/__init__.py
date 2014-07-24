@@ -149,7 +149,7 @@ class rwrapper(object):
         del doc['id']
       self.changed(False)
       return self.evaluate_insert(r.table(self._db_table).insert(
-              doc,
+              self.__dict__,
               upsert=self._upsert
             ).run(self._connection))
 
