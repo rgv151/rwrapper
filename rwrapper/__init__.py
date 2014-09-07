@@ -147,14 +147,13 @@ class rwrapper(object):
 
         #Update doc
         doc = self.__dict__
-
+        del doc['id']
         #Convert all value in doc to rethink before save
         for key in doc.keys():
             doc[key] = self._meta[key].to_rethink(doc[key])
 
         # id being none means we should insert
         if self.id is None:
-            doc = self.__dict__
             if 'id' in doc:
                 del doc['id']
             self.changed(False)
