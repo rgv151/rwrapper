@@ -5,6 +5,7 @@
 @preserve Copyright 2013 David Parlevliet.
 """
 import math
+from . import rwrapper
 
 
 def negative_field_check(should_check, value):
@@ -73,6 +74,11 @@ class Field(object):
             value = round(value, self.max_decimals)
         return value
 
+    def to_rethink(self, value):
+        return value
+
+    def to_python(self, value):
+        return value
 
 class BooleanField(Field):
     def validate(self, value):
@@ -196,3 +202,22 @@ class ObjectField(Field):
             )
 
         return value
+
+
+class ReferenceField(Field):
+
+    def __init__(self, document_type, **kwargs):
+        if not issubclass(document_type, rwrapper):
+                raise ValueError('Argument to ReferenceField constructor must be a '
+                           'rwrapper class')
+        self.document_type = document_type
+        super(ReferenceField, self).__init__(**kwargs)
+
+    def validate(self, value):
+        return value
+
+    def to_python(self, value):
+        return self.document_type(id=value).get()
+
+    def to_rethink(self, value):
+        return value.id

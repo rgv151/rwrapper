@@ -20,6 +20,7 @@ class rwrapper(object):
     _connection = None
     _upsert = False
     _non_atomic = True
+    _ignore_fields = []
 
     def __pickle__(self):
         self._pickle = True
@@ -46,7 +47,7 @@ class rwrapper(object):
                 continue
         for key in kwargs:
             try:
-                setattr(self, key, self._meta[key].validate(kwargs[key]))
+                setattr(self, key, self._meta[key].to_python(self._meta[key].validate(kwargs[key])))
             except:
                 setattr(self, key, kwargs[key])
 
@@ -54,7 +55,7 @@ class rwrapper(object):
         d = {}
         for key in dir(self):
             try:
-                if not key == None and not key.startswith('_') and \
+                if not key is None and not key.startswith('_') and \
                         not hasattr(getattr(self, key), '__call__'):
                     d[key] = getattr(self, key)
             except:
@@ -141,22 +142,31 @@ class rwrapper(object):
         doc = self.__dict__
         if isinstance(self._meta, dict) and len(self._meta) > 0:
             for key in self._meta.keys():
-                setattr(self, key, self._meta[key].validate(doc[key]))
+                if key not in self._ignore_fields:
+                    setattr(self, key, self._meta[key].validate(doc[key]))
+
+        #Update doc
+        doc = self.__dict__
+
+        #Convert all value in doc to rethink before save
+        for key in doc.keys():
+            doc[key] = self._meta[key].to_rethink(doc[key])
 
         # id being none means we should insert
-        if self.id == None:
+        if self.id is None:
+            doc = self.__dict__
             if 'id' in doc:
                 del doc['id']
             self.changed(False)
             return self.evaluate_insert(r.table(self._db_table).insert(
-                self.__dict__,
+                doc,
                 upsert=self._upsert
             ).run(self._connection))
 
         # id found; update
         self.changed(False)
         return self.evaluate_update(r.table(self._db_table).filter({'id': self.id}).update(
-            self.__dict__,
+            doc,
             non_atomic=self._non_atomic
         ).run(self._connection))
 
