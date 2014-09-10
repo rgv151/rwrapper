@@ -22,6 +22,9 @@ class rwrapper(object):
     _non_atomic = True
     _ignore_fields = []
 
+    class DoesNotExist(Exception):
+        pass
+
     def __pickle__(self):
         self._pickle = True
         pickle = jsonpickle.encode(self)
@@ -114,21 +117,21 @@ class rwrapper(object):
                 filter[key] = value
         return filter
 
-    def all(self, o=False):
-        return [row if o == False else o(**row) for row in self.rq().run(self._connection)]
+    def all(self, o=None):
+        return [row if o is None else o(**row) for row in self.rq().run(self._connection)]
 
-    def get(self, o=False, exception=False):
+    def get(self, o=None, exception=False):
         try:
             result = list(self.rq().limit(1).run(self._connection))[0]
             if o == dict:
                 result = dict(result)
             else:
-                result = result if o == False else o(**result)
+                result = result if o is None else o(**result)
                 if o:
                     result.changed(False)
             return result
         except:
-            if exception == False:
+            if not exception:
                 return None
             raise ValueError('Row not found in table.')
 
@@ -170,7 +173,7 @@ class rwrapper(object):
         ).run(self._connection))
 
     def changed(self, value):
-        if value == True or value == False:
+        if isinstance(value, bool):
             self._changed = False
         return self
 
@@ -187,3 +190,9 @@ class rwrapper(object):
 
     def delete(self, filter=False):
         return self.rq(filter).delete().run(self._connection)
+
+    def skip(self):
+        raise NotImplemented
+
+    def limit(self):
+        raise NotImplemented
