@@ -34,6 +34,7 @@ class Field(object):
     __rfield__ = True
 
     name = None
+    verbose_name = None
     required = True
 
     convert_type = True
