@@ -34,10 +34,17 @@ class Field(object):
     __rfield__ = True
 
     name = None
+    verbose_name = None
     required = True
 
     convert_type = True
     default = '_rwrapper_default'
+
+    help_text = None
+
+    max_digits = None
+    max_decimals = None
+    round_decimals = False
 
     def __init__(self, **kwargs):
         for key in kwargs:
@@ -47,30 +54,30 @@ class Field(object):
         return self.name + '.' + self.__class__.__name__
 
     def validate(self, value):
-        if value == None and not self.default == '_rwrapper_default':
+        if value is None and not self.default == '_rwrapper_default':
             return self.default
 
-        if value == None and self.required == True:
+        if value is None and self.required == True:
             raise ValueError('%s field is a required field. NoneType found.' % self._name())
         return value
 
     def ensure_max_digits(self, value):
-        if not self.max_digits == None:
+        if not self.max_digits is None:
             self.max_digits = int(self.max_digits)
             if self.max_digits > 0 and not value < math.pow(10, self.max_digits) and \
                     not value > -math.pow(10, self.max_digits):
                 raise ValueError('%s field size invalid. Constraint: maximum %d digits. Value: %d'
-                                 % (self._name(), self.max_digits))
+                                 % (self._name(), self.max_digits, value))
         return value
 
     def ensure_max_decimals(self, value):
         # todo: try think of a better way to do this.
-        if not self.max_decimals == None and self.round_decimals == False:
+        if not self.max_decimals is None and self.round_decimals is False:
             decimals = str(value - int(value))
             if decimals.startswith("0.") and len(decimals[2:]) > self.max_decimals:
                 raise ValueError("%s field size invalid. Constraint: maximum %d decimals. Value: %f"
-                                 % (self._name(), self.max_decimals))
-        elif not self.max_decimals == None:
+                                 % (self._name(), self.max_decimals, value))
+        elif not self.max_decimals is None:
             value = round(value, self.max_decimals)
         return value
 
@@ -79,6 +86,7 @@ class Field(object):
 
     def to_python(self, value):
         return value
+
 
 class BooleanField(Field):
     def validate(self, value):
@@ -112,11 +120,11 @@ class CharField(Field):
             if not isinstance(value, basestring):
                 raise ValueError('%s field is not String type.' % self._name())
 
-        if not self.min_length == None and len(value) < self.min_length:
+        if not self.min_length is None and len(value) < self.min_length:
             raise ValueError('%s field too small. Constrained to maximum %d chars. Currently %d: "%s"'
                              % (self._name(), self.min_length, len(value), value))
 
-        if not self.max_length == None and len(value) > self.max_length:
+        if not self.max_length is None and len(value) > self.max_length:
             raise ValueError('%s field too long. Constrained to maximum %d chars. Currently %d: "%s"'
                              % (self._name(), self.max_length, len(value),
                                 value[:20] + ' [...]' if len(value) > 20 else value))
@@ -136,7 +144,7 @@ class LongField(Field):
         if not self.convert_type:
             if not isinstance(value, long):
                 raise ValueError('%s field is not Long type.' % self._name())
-        elif not value == None:
+        elif not value is None:
             try:
                 value = long(value)
             except:
@@ -159,7 +167,7 @@ class IntegerField(Field):
         if not self.convert_type:
             if not isinstance(value, int):
                 raise ValueError('%s field is not Integer type.' % self._name())
-        elif not value == None:
+        elif not value is None:
             value = int(value)
 
         negative_field_check(self.negative_only, value)
@@ -181,13 +189,13 @@ class FloatField(Field):
         if not self.convert_type:
             if not isinstance(value, float):
                 raise ValueError('%s field is not Float type.' % self._name())
-        elif not value == None:
+        elif not value is None:
             value = float(value)
 
         negative_field_check(self.negative_only, value)
         positive_field_check(self.positive_only, value)
 
-        if not self.max_digits == None and self.max_digits > 0:
+        if not self.max_digits is None and self.max_digits > 0:
             IntegerField(name=self._name(), max_digits=self.max_digits).validate(value)
 
         return self.ensure_max_decimals(value)
@@ -209,7 +217,7 @@ class ReferenceField(Field):
     def __init__(self, document_type, **kwargs):
         if not issubclass(document_type, rwrapper):
                 raise ValueError('Argument to ReferenceField constructor must be a '
-                           'rwrapper class')
+                                 'rwrapper class')
         self.document_type = document_type
         super(ReferenceField, self).__init__(**kwargs)
 
