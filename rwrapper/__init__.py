@@ -99,7 +99,7 @@ class rwrapper(object):
         if not filter:
             filter = self._filter()
         rq = r.table(self._db_table)
-        if len(filter) > 0 or hasattr(filter,'__call__'):
+        if hasattr(filter,'__call__') or len(filter) > 0:
             rq = rq.filter(filter)
         if not self._order_by == None:
             rq = rq.order_by(*tuple([order if not order[:1] == '-' else \
