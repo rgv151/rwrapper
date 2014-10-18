@@ -18,7 +18,7 @@ class rwrapper(object):
     _changed = False
     _pickle = False
     _connection = None
-    _upsert = False
+    _replace = False
     _non_atomic = True
     _ignore_fields = []
 
@@ -168,7 +168,7 @@ class rwrapper(object):
             self.changed(False)
             return self.evaluate_insert(r.table(self._db_table).insert(
                 doc,
-                upsert=self._upsert
+                replace=self._replace
             ).run(self._connection))
 
         # id found; update
