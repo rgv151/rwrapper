@@ -18,7 +18,7 @@ class rwrapper(object):
     _changed = False
     _pickle = False
     _connection = None
-    _upsert = False
+    _conflict = 'error'
     _non_atomic = True
     _ignore_fields = []
 
@@ -99,7 +99,7 @@ class rwrapper(object):
         if not filter:
             filter = self._filter()
         rq = r.table(self._db_table)
-        if len(filter) > 0:
+        if hasattr(filter,'__call__') or len(filter) > 0:
             rq = rq.filter(filter)
         if not self._order_by == None:
             rq = rq.order_by(*tuple([order if not order[:1] == '-' else \
@@ -116,6 +116,12 @@ class rwrapper(object):
             if not value == None:
                 filter[key] = value
         return filter
+
+    def filter(self, filter_func, o=None):
+        if hasattr(filter_func,'__call__'):
+            return [row if o is None else o(**row) for row in self.rq(filter_func).run(self._connection)]
+        else:
+            raise ValueError('filter func must be callable')
 
     def all(self, o=None):
         return [row if o is None else o(**row) for row in self.rq().run(self._connection)]
@@ -162,7 +168,7 @@ class rwrapper(object):
             self.changed(False)
             return self.evaluate_insert(r.table(self._db_table).insert(
                 doc,
-                upsert=self._upsert
+                conflict=self._conflict
             ).run(self._connection))
 
         # id found; update
