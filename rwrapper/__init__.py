@@ -117,6 +117,12 @@ class rwrapper(object):
                 filter[key] = value
         return filter
 
+    def filter(self, filter_func, o=None):
+        if hasattr(filter_func,'__call__'):
+            return [row if o is None else o(**row) for row in self.rq(filter_func).run(self._connection)]
+        else:
+            raise ValueError('filter func must be callable')
+
     def all(self, o=None):
         return [row if o is None else o(**row) for row in self.rq().run(self._connection)]
 
